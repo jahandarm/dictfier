@@ -1,20 +1,21 @@
 import sys
 from .exceptions import FormatError
 
-
 if sys.version_info[0] < 3:
     from inspect import getargspec
+
     get_args = getargspec
     args_prop = "args"
 else:
     from inspect import signature
+
     get_args = signature
     args_prop = "parameters"
 
 
 def args_len(function):
-        args = getattr(get_args(function), args_prop)
-        return len(args)
+    args = getattr(get_args(function), args_prop)
+    return len(args)
 
 
 class UseObj(object):
@@ -29,7 +30,7 @@ class NewField(object):
 
 
 def custom(customr, field_value, parent_obj, field_name):
-    # Costomize how object is obtained
+    # Customize how object is obtained
     # Pass both field value, parent obj and field name
     # for the purpose of flexibility
     args_length = args_len(customr)
@@ -42,14 +43,14 @@ def custom(customr, field_value, parent_obj, field_name):
     else:
         raise TypeError(
             "%s() takes at most 3 argument (%s given)"
-            %(customr.__name__, args_length)
+            % (customr.__name__, args_length)
         )
 
 
 def valid_query(query):
     flat_or_nested = all(
         map(
-            lambda node : isinstance(node, (str, dict)),
+            lambda node: isinstance(node, (str, dict)),
             query
         )
     )
@@ -67,9 +68,7 @@ def valid_query(query):
         return False
 
 
-def _dict(
-        obj, query, flat_obj, nested_flat_obj,
-        nested_iter_obj):
+def _dict(obj, query, skip_none, flat_obj, nested_flat_obj, nested_iter_obj):
     # Check if the query node is valid
     if not valid_query(query):
         message = "Invalid Query format on \"%s\" node." % str(query)
@@ -80,10 +79,12 @@ def _dict(
     for field in query:
         if isinstance(field, str):
             # Flat field
+            if skip_none and not hasattr(obj, field):
+                continue
             field_value = getattr(obj, field)
 
             if flat_obj is not None:
-                # Costomize how flat obj is obtained
+                # Customize how flat obj is obtained
                 field_value = custom(flat_obj, field_value, obj, field)
 
             fields_container.update({field: field_value})
@@ -114,6 +115,7 @@ def _dict(
                         sub_child = _dict(
                             computed_value,
                             sub_field.query,
+                            skip_none,
                             flat_obj,
                             nested_flat_obj,
                             nested_iter_obj
@@ -121,19 +123,21 @@ def _dict(
                         fields_container.update({sub_field_name: sub_child})
                         continue
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) == 0):
-                        # Nested flat empty query
+                      len(sub_field) == 0):
+                    # Nested flat empty query
 
                     fields_container.update({sub_field_name: {}})
                     continue
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) == 1 and
-                        isinstance(sub_field[0], (list, tuple))):
-                        # Nested iterable field
+                      len(sub_field) == 1 and
+                      isinstance(sub_field[0], (list, tuple))):
+                    # Nested iterable field
 
+                    if skip_none and not hasattr(obj, sub_field_name):
+                        continue
                     obj_field = getattr(obj, sub_field_name)
                     if nested_iter_obj is not None:
-                        # Costomize how nested iterable obj is obtained
+                        # Customize how nested iterable obj is obtained
                         obj_field = custom(
                             nested_iter_obj,
                             obj_field,
@@ -147,6 +151,7 @@ def _dict(
                         child = _dict(
                             sub_obj,
                             sub_field[0],
+                            skip_none,
                             flat_obj,
                             nested_flat_obj,
                             nested_iter_obj
@@ -159,12 +164,13 @@ def _dict(
                     continue
 
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) > 0):
-                        # Nested flat field
-
+                      len(sub_field) > 0):
+                    # Nested flat field
+                    if skip_none and not hasattr(obj, sub_field_name):
+                        continue
                     obj_field = getattr(obj, sub_field_name)
                     if nested_flat_obj is not None:
-                        # Costomize how nested flat obj is obtained
+                        # Customize how nested flat obj is obtained
                         obj_field = custom(
                             nested_flat_obj,
                             obj_field,
@@ -175,6 +181,7 @@ def _dict(
                     child = _dict(
                         obj_field,
                         sub_field,
+                        skip_none,
                         flat_obj,
                         nested_flat_obj,
                         nested_iter_obj
@@ -183,11 +190,11 @@ def _dict(
                 else:
                     # Ivalid Assignment of value to a field
                     message = (
-                        "'%s' value must be of type "
-                        "NewField or UseObj, not '%s'. "
-                        "Refer to 'useobj', 'objfield' or 'newfield' "
-                        "APIs for more details."
-                    ) % (str(sub_field_name), type(sub_field).__name__)
+                                  "'%s' value must be of type "
+                                  "NewField or UseObj, not '%s'. "
+                                  "Refer to 'useobj', 'objfield' or 'newfield' "
+                                  "APIs for more details."
+                              ) % (str(sub_field_name), type(sub_field).__name__)
                     raise TypeError(message)
 
         elif isinstance(field, (list, tuple)):
@@ -200,6 +207,7 @@ def _dict(
                 child = _dict(
                     sub_obj,
                     field,
+                    skip_none,
                     flat_obj,
                     nested_flat_obj,
                     nested_iter_obj
@@ -207,11 +215,11 @@ def _dict(
                 fields_container.append(child)
         else:
             message = (
-                "Wrong formating of Query on '%s' node, "
-                "It seems like the Query was mutated during run time."
-                "Use 'tuple' instead of 'list' to avoid mutating Query "
-                "accidentally."
-            ) % str(field)
+                          "Wrong formating of Query on '%s' node, "
+                          "It seems like the Query was mutated during run time."
+                          "Use 'tuple' instead of 'list' to avoid mutating Query "
+                          "accidentally."
+                      ) % str(field)
             raise FormatError(message)
 
     return fields_container

@@ -1,12 +1,14 @@
 from . import factory
 from . import filter as ft
 
+
 def dictfy(
-        obj, query, flat_obj=None,
+        obj, query, skip_none=False, flat_obj=None,
         nested_flat_obj=None, nested_iter_obj=None):
     return factory._dict(
         obj,
         query,
+        skip_none,
         flat_obj,
         nested_flat_obj,
         nested_iter_obj,
@@ -23,6 +25,7 @@ def filter(
         nested_flat_obj,
         nested_iter_obj,
     )
+
 
 def useobj(function, query=None):
     return factory.UseObj(function, query)

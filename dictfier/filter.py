@@ -18,7 +18,7 @@ def filtered_dict(
             field_value = obj[field]
 
             if flat_obj is not None:
-                # Costomize how flat obj is obtained
+                # Customize how flat obj is obtained
                 field_value = custom(flat_obj, field_value, obj, field)
 
             fields_container.update({field: field_value})
@@ -56,19 +56,19 @@ def filtered_dict(
                         fields_container.update({sub_field_name: sub_child})
                         continue
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) == 0):
-                        # Nested flat empty query
+                      len(sub_field) == 0):
+                    # Nested flat empty query
 
                     fields_container.update({sub_field_name: {}})
                     continue
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) == 1 and
-                        isinstance(sub_field[0], (list, tuple))):
-                        # Nested iterable field
+                      len(sub_field) == 1 and
+                      isinstance(sub_field[0], (list, tuple))):
+                    # Nested iterable field
 
                     obj_field = obj[sub_field_name]
                     if nested_iter_obj is not None:
-                        # Costomize how nested iterable obj is obtained
+                        # Customize how nested iterable obj is obtained
                         obj_field = custom(
                             nested_iter_obj,
                             obj_field,
@@ -94,12 +94,12 @@ def filtered_dict(
                     continue
 
                 elif (isinstance(sub_field, (list, tuple)) and
-                        len(sub_field) > 0):
-                        # Nested flat field
+                      len(sub_field) > 0):
+                    # Nested flat field
 
                     obj_field = obj[sub_field_name]
                     if nested_flat_obj is not None:
-                        # Costomize how nested flat obj is obtained
+                        # Customize how nested flat obj is obtained
                         obj_field = custom(
                             nested_flat_obj,
                             obj_field,
@@ -118,11 +118,11 @@ def filtered_dict(
                 else:
                     # Ivalid Assignment of value to a field
                     message = (
-                        "'%s' value must be of type "
-                        "NewField or UseObj, not '%s'. "
-                        "Refer to 'useobj', 'dictfield' or 'newfield' "
-                        "APIs for more details."
-                    ) % (str(sub_field_name), type(sub_field).__name__)
+                                  "'%s' value must be of type "
+                                  "NewField or UseObj, not '%s'. "
+                                  "Refer to 'useobj', 'dictfield' or 'newfield' "
+                                  "APIs for more details."
+                              ) % (str(sub_field_name), type(sub_field).__name__)
                     raise TypeError(message)
 
         elif isinstance(field, (list, tuple)):
@@ -142,11 +142,11 @@ def filtered_dict(
                 fields_container.append(child)
         else:
             message = (
-                "Wrong formating of Query on '%s' node, "
-                "It seems like the Query was mutated during run time."
-                "Use 'tuple' instead of 'list' to avoid mutating Query "
-                "accidentally."
-            ) % str(field)
+                          "Wrong formating of Query on '%s' node, "
+                          "It seems like the Query was mutated during run time."
+                          "Use 'tuple' instead of 'list' to avoid mutating Query "
+                          "accidentally."
+                      ) % str(field)
             raise FormatError(message)
 
     return fields_container
